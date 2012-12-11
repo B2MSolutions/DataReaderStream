@@ -2,7 +2,6 @@
 {
     using System;
     using System.Data;
-    using System.Data.SqlClient;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -120,7 +119,7 @@
             {
                 throw new ArgumentOutOfRangeException("offset", "Offset cannot be negative");
             }
-            
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException("count", "Count cannot be negative");
@@ -146,7 +145,7 @@
                 }
             };
 
-            while (this.DataReader.Read() && (readBytes + offset) < buffer.Length && readBytes < count)
+            while ((readBytes + offset) < buffer.Length && readBytes < count && this.DataReader.Read())
             {
                 this.DataReader.GetValues(values);
                 var row = values
@@ -196,7 +195,7 @@
             var remainder = new byte[remainderLength];
             Buffer.BlockCopy(source, numberOfBytesToCopy, remainder, 0, remainderLength);
 
-            return new Tuple<byte[],int>(remainder, numberOfBytesToCopy);
+            return new Tuple<byte[], int>(remainder, numberOfBytesToCopy);
         }
     }
 }

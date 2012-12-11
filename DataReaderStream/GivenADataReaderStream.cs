@@ -1,11 +1,11 @@
-﻿namespace Presentation.Framework.Silverlight.Facts
+﻿namespace B2M
 {
-    using B2M;
-    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Data;
+    using System.Linq;
     using System.Text;
+    using Moq;
     using Xunit;
     using Xunit.Extensions;
 
@@ -26,6 +26,24 @@
         {
             get
             {
+                yield return new object[]
+                { 
+                    new object[]
+                    {
+                        new object[] { "r0c0", "r0c1" },
+                        new object[] { "r1c0", "r1c1" },
+                        new object[] { "r2c0", "r2c1" },
+                        new object[] { "r3c0", "r3c1" },
+                        new object[] { "r4c0", "r4c1" },
+                        new object[] { "r5c0", "r5c1" },
+                        new object[] { "r6c0", "r6c1" },
+                        new object[] { "r7c0", "r7c1" }
+                    }, 
+                    88,
+                    88,
+                    "r0c0\tr0c1\r\nr1c0\tr1c1\r\nr2c0\tr2c1\r\nr3c0\tr3c1\r\nr4c0\tr4c1\r\nr5c0\tr5c1\r\nr6c0\tr6c1\r\nr7c0\tr7c1\r\n" 
+                };
+
                 yield return new object[]
                 { 
                     new object[]
@@ -268,7 +286,7 @@
         }
 
         [Fact]
-        public void WhenCallingReadRepeatedlyWhenBufferIsSmallerThanRowShouldReturnCorrectStream()
+        public void WhenCallingReadRepeatedlyAndBufferIsSmallerThanRowShouldReturnCorrectStream()
         {
             this.DataReader.SetupGet(dr => dr.FieldCount).Returns(2);
 
@@ -304,6 +322,45 @@
             Assert.Equal(2, this.Reader.Read(buffer, 0, buffer.Length));
             var buffer3String = Encoding.UTF8.GetString(buffer);
             Assert.Equal("\r\n67", buffer3String);
+        }
+
+        [Fact]
+        public void WhenCallingReadRepeatedlyAndBufferIsSmallerThanRowLengthAndHaveTwoRowsShouldReturnCorrectStream()
+        {
+            this.DataReader.SetupGet(dr => dr.FieldCount).Returns(2);
+
+            var readCount = 0;
+            this.DataReader.Setup(dr => dr.Read())
+                                          .Returns(() =>
+                                          {
+                                              return readCount++ < 2;
+                                          });
+
+            var buffer = new byte[4];
+            this.DataReader.Setup(dr => dr.GetValues(It.IsAny<object[]>()))
+                                          .Returns(2)
+                                          .Callback<object[]>((o) =>
+                                          {
+                                              o[0] = "1";
+                                              o[1] = "2";
+                                          });
+
+            var bytesRead = 0;
+
+            var full = new StringBuilder();
+            bytesRead += this.Reader.Read(buffer, 0, buffer.Length);
+            var buffer1String = Encoding.UTF8.GetString(buffer);
+            full.Append(buffer1String);
+
+            bytesRead += this.Reader.Read(buffer, 0, buffer.Length);
+            var buffer2String = Encoding.UTF8.GetString(buffer);
+            full.Append(buffer2String);
+
+            bytesRead += this.Reader.Read(buffer, 0, buffer.Length);
+            var buffer3String = Encoding.UTF8.GetString(buffer);
+            full.Append(buffer3String);
+            Assert.Equal(10, bytesRead);
+            Assert.Equal("1\t2\r\n1\t2\r\n\t2", full.ToString());
         }
 
         [Fact]
